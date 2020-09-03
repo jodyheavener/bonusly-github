@@ -1,13 +1,14 @@
-import * as core from '@actions/core'
+import { setSecret, setFailed, info } from '@actions/core'
+import { context } from '@actions/github'
 
-async function run(): Promise<void> {
-  try {
-    core.setSecret('api-token')
-    const apiToken: string = core.getInput('api-token')
-    core.info(`API Token: ${apiToken}`)
-  } catch (error) {
-    core.setFailed(error.message)
-  }
+const run = async (): Promise<void> => {
+  setSecret('api-token')
+  // const apiToken: string = core.getInput('api-token')
+  info(JSON.stringify(context))
 }
 
-run()
+try {
+  run()
+} catch (error) {
+  setFailed(error.message)
+}
