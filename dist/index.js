@@ -41,9 +41,7 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.setSecret('api-token');
-            core.info('heyuyyyyyyyyy');
             const apiToken = core.getInput('api-token');
-            core.debug(`API Token: ${apiToken}`);
             core.info(`API Token: ${apiToken}`);
         }
         catch (error) {
