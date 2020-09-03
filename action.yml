@@ -1,11 +1,10 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Bonusly for GitHub'
+description: 'A GitHub Action for Bonusly'
+author: 'Jody Heavener'
 inputs:
-  milliseconds: # change this
+  api-token:
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'Your Bonusly API Access Token'
 runs:
   using: 'node12'
   main: 'dist/index.js'
