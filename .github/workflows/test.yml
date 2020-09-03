@@ -21,4 +21,4 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./
         with:
-          api-key: ${{ secrets.BONUSLY_API_TOKEN }}
+          api-token: ${{ secrets.BONUSLY_API_TOKEN }}

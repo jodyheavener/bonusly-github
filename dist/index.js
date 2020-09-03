@@ -42,7 +42,7 @@ function run() {
         try {
             core.setSecret('api-token');
             const apiToken = core.getInput('api-token');
-            core.debug(`API Token: ${apiToken}`); // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
+            core.debug(`API Token: ${apiToken}`);
             core.info(`API Token: ${apiToken}`);
         }
         catch (error) {
