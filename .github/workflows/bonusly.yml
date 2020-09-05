@@ -10,9 +10,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: |
-          npm install
+          yarn install
       - run: |
-          npm run build-test
+          yarn build-test
   run:
     runs-on: ubuntu-latest
     steps:
