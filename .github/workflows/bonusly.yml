@@ -1,4 +1,4 @@
-name: 'bonusly'
+name: Bonusly
 
 on:
   pull_request:
@@ -13,10 +13,12 @@ jobs:
           yarn install
       - run: |
           yarn build-test
-  run:
+  merge-allocate:
     runs-on: ubuntu-latest
+    name: Merge allocate
     steps:
       - uses: actions/checkout@v2
       - uses: ./
+        if: github.event.action == 'closed' && github.event.pull_request.merged
         with:
           api-token: ${{ secrets.BONUSLY_API_TOKEN }}
