@@ -7,6 +7,7 @@ require('./sourcemap-register.js');module.exports =
 
 "use strict";
 
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -19,10 +20,58 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __webpack_require__(186);
 const github_1 = __webpack_require__(438);
+const extractCommitAuthors = (commit) => {
+    const COAUTHOR_REGEX = /Co-authored-by:\s[\w\s]+<([\w.@+_]+)>*/gim;
+    const authors = [commit.commit.author.email];
+    let result;
+    while ((result = COAUTHOR_REGEX.exec(commit.commit.message))) {
+        authors.push(result[1]);
+    }
+    return authors;
+};
+const createCommentAllocation = (
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+octokit, comment) => __awaiter(void 0, void 0, void 0, function* () {
+    const BONUS_REGEX = /^@bonusly\s\+(\d+)\s(.+)$/m;
+    const allocation = {};
+    allocation.email = (yield octokit.users.getByUsername({ username: comment.user.login })).data.email;
+    let result;
+    while ((result = BONUS_REGEX.exec(comment.body))) {
+        allocation.amount = parseInt(result[1]);
+        allocation.message = result[2];
+    }
+    return Promise.resolve(allocation);
+});
 const run = () => __awaiter(void 0, void 0, void 0, function* () {
-    core_1.setSecret('api-token');
-    // const apiToken: string = core.getInput('api-token')
-    core_1.info(JSON.stringify(github_1.context));
+    const { action, pull_request, repository } = github_1.context.payload;
+    const inputs = {
+        bonuslyToken: core_1.getInput('bonusly-token'),
+        githubToken: core_1.getInput('github-token')
+    };
+    core_1.setSecret('bonusly-token');
+    core_1.setSecret('github-token');
+    if (!pull_request || !pull_request.merged || action !== 'closed') {
+        core_1.setFailed(`Incorrect Pull Request data received.
+      Refer to documentation for setup instructions.`);
+    }
+    const octokit = github_1.getOctokit(inputs.githubToken);
+    const [owner, repo] = repository.full_name.split('/');
+    const { data: commits } = yield octokit.pulls.listCommits({
+        owner,
+        repo,
+        pull_number: pull_request.number
+    });
+    const { data: comments } = yield octokit.issues.listComments({
+        owner,
+        repo,
+        issue_number: pull_request.number
+    });
+    const authorEmails = [...new Set(...commits.map(extractCommitAuthors))];
+    const allocations = (yield Promise.all(comments.map((comment) => __awaiter(void 0, void 0, void 0, function* () {
+        return yield createCommentAllocation(octokit, comment);
+    })))).filter(allocation => !!allocation.email);
+    core_1.info(JSON.stringify(authorEmails));
+    core_1.info(JSON.stringify(allocations));
 });
 try {
     run();
