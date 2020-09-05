@@ -2,9 +2,15 @@ name: 'Bonusly for GitHub'
 description: 'A GitHub Action for Bonusly'
 author: 'Jody Heavener'
 inputs:
-  api-token:
+  bonusly-token:
     required: true
-    description: 'Your Bonusly API Access Token'
+    description: 'A Bonusly API Access Token'
+  github-token:
+    required: true
+    description: 'A GitHub Personal Access Token'
+  default-hashtag:
+    required: false
+    description: 'The hashtag to apply when one is not included in a message. Default is #pr if unset.'
 runs:
   using: 'node12'
   main: 'dist/index.js'
