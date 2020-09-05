@@ -11,8 +11,8 @@
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map --license licenses.txt",
     "test": "jest",
-    "build-pack": "npm run format && npm run build && npm run package",
-    "build-test": "npm run format && npm run build && npm run lint && npm test"
+    "build-pack": "yarn format && yarn build && yarn package",
+    "build-test": "yarn format && yarn build && yarn lint && yarn test"
   },
   "repository": {
     "type": "git",
