@@ -17,12 +17,39 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 const core_1 = __webpack_require__(186);
 const github_1 = __webpack_require__(438);
+const COAUTHOR_REGEX = /Co-authored-by:\s[\w\s]+<([\w.\@+_]+)>*/gim;
+const extractCommitAuthors = (commit) => {
+    const authors = [commit.commit.author.email];
+    let result;
+    while ((result = COAUTHOR_REGEX.exec(commit.commit.message))) {
+        authors.push(result[1]);
+    }
+    return authors;
+};
 const run = () => __awaiter(void 0, void 0, void 0, function* () {
-    core_1.setSecret('api-token');
-    // const apiToken: string = core.getInput('api-token')
-    core_1.info(JSON.stringify(github_1.context));
+    const { action, pull_request, repository } = github_1.context.payload;
+    const inputs = {
+        bonuslyToken: core_1.getInput('bonusly-token'),
+        githubToken: core_1.getInput('github-token')
+    };
+    core_1.setSecret('bonusly-token');
+    core_1.setSecret('github-token');
+    if (!pull_request || !pull_request.merged || action !== 'closed') {
+        core_1.setFailed(`Incorrect Pull Request data received.
+      Refer to documentation for setup instructions.`);
+    }
+    const octokit = github_1.getOctokit(inputs.githubToken);
+    const [owner, repo] = repository.full_name.split('/');
+    const { data: commits } = yield octokit.pulls.listCommits({
+        pull_number: pull_request.number,
+        owner,
+        repo
+    });
+    const authorEmails = [...new Set(commits.map(extractCommitAuthors))];
+    core_1.info(JSON.stringify(authorEmails));
 });
 try {
     run();
