@@ -33,13 +33,15 @@ const run = async (): Promise<void> => {
 
   const octokit = getOctokit(githubToken)
   const [owner, repo] = repository!.full_name!.split('/')
-  const commits = await octokit.pulls.listCommits({
+  const { data: commits } = await octokit.pulls.listCommits({
     pull_number: pull_request!.number,
     owner,
     repo
   })
 
-  info(JSON.stringify(commits))
+  const authorEmails = new Set(commits.map(item => item.commit.author.email))
+
+  info(JSON.stringify(authorEmails))
 }
 
 try {

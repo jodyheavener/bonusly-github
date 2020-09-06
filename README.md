@@ -22,13 +22,13 @@ $ yarn test
 First, set the following secrets on your repo:
 
 ```zsh
-# Your Bonusly API Access Token
+# A Bonusly API Access Token
 # https://bonus.ly/api
 BONUSLY_API_TOKEN
 
 # A GitHub Personal Access Token
 # https://github.com/settings/tokens/new
-GITHUB_API_TOKEN
+GH_API_TOKEN
 ```
 
 Then set up a new workflow:

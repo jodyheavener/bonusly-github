@@ -40,12 +40,13 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     }
     const octokit = github_1.getOctokit(githubToken);
     const [owner, repo] = repository.full_name.split('/');
-    const commits = yield octokit.pulls.listCommits({
+    const { data: commits } = yield octokit.pulls.listCommits({
         pull_number: pull_request.number,
         owner,
         repo
     });
-    core_1.info(JSON.stringify(commits));
+    const authorEmails = new Set(commits.map(item => item.commit.author.email));
+    core_1.info(JSON.stringify(authorEmails));
 });
 try {
     run();
