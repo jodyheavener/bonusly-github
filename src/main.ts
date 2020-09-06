@@ -1,10 +1,45 @@
-import { setSecret, setFailed, info } from '@actions/core'
-import { context } from '@actions/github'
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { setSecret, setFailed, getInput, info } from '@actions/core'
+import { getOctokit, context } from '@actions/github'
 
 const run = async (): Promise<void> => {
-  setSecret('api-token')
-  // const apiToken: string = core.getInput('api-token')
-  info(JSON.stringify(context))
+  const { action, pull_request, repository } = context.payload
+
+  if (!pull_request || !pull_request.merged || action !== 'closed') {
+    setFailed(
+      `Incorrect Pull Request data received.
+      Refer to documentation for setup instructions.`
+    )
+  }
+
+  setSecret('bonusly-token')
+  setSecret('github-token')
+  const bonuslyToken: string = getInput('bonusly-token')
+  const githubToken: string = getInput('github-token')
+
+  if (!bonuslyToken) {
+    setFailed(
+      `Could not retrieve bonusly-token.
+      Is BONUSLY_API_TOKEN secret set on the repo?`
+    )
+  }
+
+  if (!githubToken) {
+    setFailed(
+      `Could not retrieve github-token.
+      Is GH_API_TOKEN secret set on the repo?`
+    )
+  }
+
+  const octokit = getOctokit(githubToken)
+  const [owner, repo] = repository!.full_name!.split('/')
+  const commits = await octokit.pulls.listCommits({
+    pull_number: pull_request!.number,
+    owner,
+    repo
+  })
+
+  info(JSON.stringify(commits))
 }
 
 try {
