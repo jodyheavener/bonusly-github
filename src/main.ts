@@ -1,130 +1,106 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
-import { setSecret, setFailed, getInput, info } from '@actions/core'
-import { getOctokit, context } from '@actions/github'
-
-type Allocation = {
-  amount?: number
-  message?: string
-  email?: string
-}
-
-const DEFAULT_HASHTAG = '#pr'
-
-const extractCommitAuthors = (commit: {
-  commit: {
-    author: { email: string }
-    message: string
-  }
-}): string[] => {
-  const COAUTHOR_REGEX = /Co-authored-by:\s[\w\s]+<([\w.@+_]+)>*/gim
-  const authors = [commit.commit.author.email]
-
-  let result
-  while ((result = COAUTHOR_REGEX.exec(commit.commit.message))) {
-    authors.push(result[1])
-  }
-
-  return authors
-}
+import { setSecret, setFailed, getInput, info } from '@actions/core';
+import { context } from '@actions/github';
+import { Allocation } from './types';
+import { GitHub } from './github';
+import { Bonusly } from './bonusly';
 
 const createCommentAllocation = async (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  octokit: any,
-  comment: {
-    body: string
-    user: {
-      login: string
-    }
-  },
-  defaultHashTag: string
-): Promise<Allocation> => {
-  const BONUS_REGEX = /^@bonusly\s\+?(\d+)\+?\s(?:points\s)?(.+)$/gm
-  const allocation: Allocation = {}
+  comment: any,
+  client: GitHub
+): Promise<Allocation | null> => {
+  const BONUS_REGEX = /^@bonusly\s\+?(\d+)\+?\s(?:points\s)?(.+)$/gm;
+  const allocation = {
+    amount: 0,
+    message: '',
+    giver: '',
+  };
 
   return new Promise(async resolve => {
-    allocation.email = (
-      await octokit.users.getByUsername({ username: comment.user.login })
-    ).data.email
+    allocation.giver = await client.commentEmail(comment);
 
-    const result = BONUS_REGEX.exec(comment.body)
-    if (result?.length) {
-      allocation.amount = parseInt(result[1])
-      allocation.message = result[2]
-
-      if (!allocation.message.includes('#')) {
-        allocation.message = `${allocation.message} ${defaultHashTag}`
-      }
+    if (!allocation.giver) {
+      resolve(null);
     }
 
-    resolve(allocation)
-  })
-}
+    const result = BONUS_REGEX.exec(comment.body);
+    if (result?.length) {
+      allocation.amount = parseInt(result[1]);
+      allocation.message = result[2];
+    }
+
+    resolve(allocation as Allocation);
+  });
+};
 
 const run = async (): Promise<void> => {
-  const { action, pull_request, repository } = context.payload
-  const inputs: { [key: string]: string } = {
+  const { action, pull_request, repository } = context.payload;
+  const inputs: {
+    bonuslyToken?: string;
+    githubToken?: string;
+    defaultHashTag?: string;
+  } = {
     bonuslyToken: getInput('bonusly-token'),
     githubToken: getInput('github-token'),
-    defaultHashTag: getInput('default-hashtag') || DEFAULT_HASHTAG
+    defaultHashTag: getInput('default-hashtag'),
+  };
+
+  setSecret('bonusly-token');
+  setSecret('github-token');
+
+  if (!inputs.bonuslyToken || !inputs.githubToken) {
+    setFailed(
+      `Missing Bonusly or GitHub API token. Both are required.
+      Refer to README for workflow usage instructions.`
+    );
   }
 
-  setSecret('bonusly-token')
-  setSecret('github-token')
+  if (!repository) {
+    setFailed(`Could not retrieve repository.`);
+  }
 
   if (!pull_request || !pull_request.merged || action !== 'closed') {
     setFailed(
       `Incorrect Pull Request data received.
       Refer to README for workflow usage instructions.`
+    );
+  }
+
+  const githubClient = new GitHub(
+    inputs.githubToken!,
+    repository!,
+    pull_request
+  );
+
+  const bonuslyClient = new Bonusly(
+    inputs.bonuslyToken!,
+    inputs.defaultHashTag
+  );
+
+  const commits = await githubClient.getCommits();
+  const commitAuthors = githubClient.getUniqueCommitAuthors(commits);
+  const bonuslyHandles = await Promise.all(
+    commitAuthors.map(
+      async author => (await bonuslyClient.getUser(author)).username
     )
-  }
+  );
 
-  if (!inputs.defaultHashTag.startsWith('#')) {
-    inputs.defaultHashTag = `#${inputs.defaultHashTag}`
-  }
-
-  const octokit = getOctokit(inputs.githubToken)
-  const [owner, repo] = repository!.full_name!.split('/')
-
-  const { data: commits } = await octokit.pulls.listCommits({
-    owner,
-    repo,
-    pull_number: pull_request!.number
-  })
-
-  const { data: comments } = await octokit.issues.listComments({
-    owner,
-    repo,
-    issue_number: pull_request!.number
-  })
-
-  const authorEmails = [...new Set(...commits.map(extractCommitAuthors))]
+  const comments = await githubClient.getComments();
   const allocations = (
     await Promise.all(
-      comments.map(async comment => {
-        return await createCommentAllocation(
-          octokit,
-          comment,
-          inputs.defaultHashTag
-        )
-      })
+      comments.map(
+        async comment => await createCommentAllocation(comment, githubClient)
+      )
     )
-  ).filter(allocation => !!allocation.email)
+  ).filter(allocation => !!allocation);
 
-  // TODO: create Bonusly allocations
-  info(JSON.stringify(authorEmails))
-  info(JSON.stringify(allocations))
+  info(JSON.stringify(bonuslyHandles));
+  info(JSON.stringify(allocations));
 
-  await octokit.issues.createComment({
-    owner,
-    repo,
-    issue_number: pull_request!.number,
-    body: 'Done!'
-  })
-}
+  githubClient.createComment('💚 Bonusly points awarded!');
+};
 
 try {
-  run()
+  run();
 } catch (error) {
-  setFailed(error.message)
+  setFailed(error.message);
 }

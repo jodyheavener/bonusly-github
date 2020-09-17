@@ -2,12 +2,172 @@ require('./sourcemap-register.js');module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 220:
+/***/ (function(__unused_webpack_module, exports) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Bonusly = void 0;
+const DEFAULT_HASHTAG = '#pr';
+class Bonusly {
+    constructor(token, hashtag = DEFAULT_HASHTAG) {
+        this.token = token;
+        this.hashtag = hashtag;
+        this.baseUrl = 'https://bonus.ly/api/v1';
+    }
+    getUser(email) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield fetch(`${this.baseUrl}/users?email=${encodeURIComponent(email)}`);
+            const data = (yield response.json());
+            return new Promise((resolve, reject) => {
+                if (!data.success) {
+                    reject(data.message);
+                }
+                resolve(data.result[0]);
+            });
+        });
+    }
+    createBonus(allocation, handles) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const recipients = handles.map(handle => `@${handle}`).join(' ');
+            if (!allocation.message.includes('#')) {
+                allocation.message = `${allocation.message} ${this.hashtag}`;
+            }
+            const response = yield fetch(`${this.baseUrl}/bonuses`, {
+                body: JSON.stringify({
+                    giver_email: allocation.giver,
+                    reason: `+${allocation.amount} ${recipients} ${allocation.message}`,
+                }),
+            });
+            const data = (yield response.json());
+            return new Promise((resolve, reject) => {
+                if (!data.success) {
+                    reject(data.message);
+                }
+                resolve(data.result);
+            });
+        });
+    }
+}
+exports.Bonusly = Bonusly;
+
+
+/***/ }),
+
+/***/ 928:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GitHub = void 0;
+const github_1 = __webpack_require__(438);
+class GitHub {
+    constructor(token, repository, pullRequest) {
+        this.pullRequest = pullRequest;
+        const [owner, repo] = repository.full_name.split('/');
+        this.owner = owner;
+        this.repo = repo;
+        this.octokit = github_1.getOctokit(token);
+    }
+    getCommits() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield this.octokit.pulls.listCommits({
+                owner: this.owner,
+                repo: this.repo,
+                pull_number: this.pullRequest.number,
+            });
+            return new Promise((resolve, reject) => {
+                if (response.status !== 200) {
+                    reject(response.data);
+                }
+                resolve(response.data);
+            });
+        });
+    }
+    getComments() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield this.octokit.issues.listComments({
+                owner: this.owner,
+                repo: this.repo,
+                issue_number: this.pullRequest.number,
+            });
+            return new Promise((resolve, reject) => {
+                if (response.status !== 200) {
+                    reject(response.data);
+                }
+                resolve(response.data);
+            });
+        });
+    }
+    createComment(message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield this.octokit.issues.createComment({
+                owner: this.owner,
+                repo: this.repo,
+                issue_number: this.pullRequest.number,
+                body: message,
+            });
+            if (response.status !== 201) {
+                Promise.reject(response.data);
+            }
+        });
+    }
+    getCommitAuthors(commit) {
+        const COAUTHOR_REGEX = /Co-authored-by:\s[\w\s]+<([\w.@+_]+)>*/gim;
+        const authors = [commit.commit.author.email];
+        let result;
+        while ((result = COAUTHOR_REGEX.exec(commit.commit.message))) {
+            authors.push(result[1]);
+        }
+        return authors;
+    }
+    getUniqueCommitAuthors(commits) {
+        return [...new Set(...commits.map(this.getCommitAuthors.bind(this)))];
+    }
+    commentEmail(comment) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield this.octokit.users.getByUsername({
+                username: comment.user.login,
+            });
+            return new Promise((resolve, reject) => {
+                if (response.status !== 200) {
+                    reject(response.data);
+                }
+                resolve(response.data.email);
+            });
+        });
+    }
+}
+exports.GitHub = GitHub;
+
+
+/***/ }),
+
 /***/ 109:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -20,30 +180,24 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __webpack_require__(186);
 const github_1 = __webpack_require__(438);
-const DEFAULT_HASHTAG = '#pr';
-const extractCommitAuthors = (commit) => {
-    const COAUTHOR_REGEX = /Co-authored-by:\s[\w\s]+<([\w.@+_]+)>*/gim;
-    const authors = [commit.commit.author.email];
-    let result;
-    while ((result = COAUTHOR_REGEX.exec(commit.commit.message))) {
-        authors.push(result[1]);
-    }
-    return authors;
-};
-const createCommentAllocation = (
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-octokit, comment, defaultHashTag) => __awaiter(void 0, void 0, void 0, function* () {
+const github_2 = __webpack_require__(928);
+const bonusly_1 = __webpack_require__(220);
+const createCommentAllocation = (comment, client) => __awaiter(void 0, void 0, void 0, function* () {
     const BONUS_REGEX = /^@bonusly\s\+?(\d+)\+?\s(?:points\s)?(.+)$/gm;
-    const allocation = {};
+    const allocation = {
+        amount: 0,
+        message: '',
+        giver: '',
+    };
     return new Promise((resolve) => __awaiter(void 0, void 0, void 0, function* () {
-        allocation.email = (yield octokit.users.getByUsername({ username: comment.user.login })).data.email;
+        allocation.giver = yield client.commentEmail(comment);
+        if (!allocation.giver) {
+            resolve(null);
+        }
         const result = BONUS_REGEX.exec(comment.body);
         if (result === null || result === void 0 ? void 0 : result.length) {
             allocation.amount = parseInt(result[1]);
             allocation.message = result[2];
-            if (!allocation.message.includes('#')) {
-                allocation.message = `${allocation.message} ${defaultHashTag}`;
-            }
         }
         resolve(allocation);
     }));
@@ -53,42 +207,31 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     const inputs = {
         bonuslyToken: core_1.getInput('bonusly-token'),
         githubToken: core_1.getInput('github-token'),
-        defaultHashTag: core_1.getInput('default-hashtag') || DEFAULT_HASHTAG
+        defaultHashTag: core_1.getInput('default-hashtag'),
     };
     core_1.setSecret('bonusly-token');
     core_1.setSecret('github-token');
+    if (!inputs.bonuslyToken || !inputs.githubToken) {
+        core_1.setFailed(`Missing Bonusly or GitHub API token. Both are required.
+      Refer to README for workflow usage instructions.`);
+    }
+    if (!repository) {
+        core_1.setFailed(`Could not retrieve repository.`);
+    }
     if (!pull_request || !pull_request.merged || action !== 'closed') {
         core_1.setFailed(`Incorrect Pull Request data received.
       Refer to README for workflow usage instructions.`);
     }
-    if (!inputs.defaultHashTag.startsWith('#')) {
-        inputs.defaultHashTag = `#${inputs.defaultHashTag}`;
-    }
-    const octokit = github_1.getOctokit(inputs.githubToken);
-    const [owner, repo] = repository.full_name.split('/');
-    const { data: commits } = yield octokit.pulls.listCommits({
-        owner,
-        repo,
-        pull_number: pull_request.number
-    });
-    const { data: comments } = yield octokit.issues.listComments({
-        owner,
-        repo,
-        issue_number: pull_request.number
-    });
-    const authorEmails = [...new Set(...commits.map(extractCommitAuthors))];
-    const allocations = (yield Promise.all(comments.map((comment) => __awaiter(void 0, void 0, void 0, function* () {
-        return yield createCommentAllocation(octokit, comment, inputs.defaultHashTag);
-    })))).filter(allocation => !!allocation.email);
-    // TODO: create Bonusly allocations
-    core_1.info(JSON.stringify(authorEmails));
+    const githubClient = new github_2.GitHub(inputs.githubToken, repository, pull_request);
+    const bonuslyClient = new bonusly_1.Bonusly(inputs.bonuslyToken, inputs.defaultHashTag);
+    const commits = yield githubClient.getCommits();
+    const commitAuthors = githubClient.getUniqueCommitAuthors(commits);
+    const bonuslyHandles = yield Promise.all(commitAuthors.map((author) => __awaiter(void 0, void 0, void 0, function* () { return (yield bonuslyClient.getUser(author)).username; })));
+    const comments = yield githubClient.getComments();
+    const allocations = (yield Promise.all(comments.map((comment) => __awaiter(void 0, void 0, void 0, function* () { return yield createCommentAllocation(comment, githubClient); })))).filter(allocation => !!allocation);
+    core_1.info(JSON.stringify(bonuslyHandles));
     core_1.info(JSON.stringify(allocations));
-    yield octokit.issues.createComment({
-        owner,
-        repo,
-        issue_number: pull_request.number,
-        body: 'Done!'
-    });
+    githubClient.createComment('💚 Bonusly points awarded!');
 });
 try {
     run();

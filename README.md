@@ -51,7 +51,9 @@ Now, anyone who would like to award the commit authors of a merged Pull Request 
 @bonusly [amount] points [message]
 ```
 
-Some notes about this process:
+When the Pull Request is merged the points will be awarded and a comment will be left to let you know who got what and if any issues occurred.
+
+**Some notes about this process:**
 
 - The number of points are awarded to each email address associated with a commit in the PR. This includes co-authored commits.
 - Comments can contain both the point assignment and other messaging. Just make sure they're on separate lines.
@@ -59,6 +61,7 @@ Some notes about this process:
 - Points are only awarded on a successful merge, which means point assignment comments can be added and removed at any point before merging.
 - Comment authors must have a publicly available email so GitHub can retrieve it via the API.
 - This plugin looks up Bonusly users by email, so commit and comment authors email must be associated with a user in Bonusly for points to be successfully awarded.
+- The user that generated the GitHub API token will be used to post the followup comment. Set up a machine user and token to have a "bot" perform API actions and commenting.
 
 ## Development
 
