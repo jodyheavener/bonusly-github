@@ -31,7 +31,11 @@ class Bonusly {
     }
     getUser(email) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield node_fetch_1.default(`${this.baseUrl}/users?email=${encodeURIComponent(email)}`);
+            const response = yield node_fetch_1.default(`${this.baseUrl}/users?email=${encodeURIComponent(email)}`, {
+                headers: {
+                    Authorization: `Bearer ${this.token}`,
+                },
+            });
             const data = (yield response.json());
             return new Promise((resolve, reject) => {
                 if (!data.success) {
@@ -52,6 +56,10 @@ class Bonusly {
                     giver_email: allocation.giver,
                     reason: `+${allocation.amount} ${recipients} ${allocation.message}`,
                 }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${this.token}`,
+                },
             });
             const data = (yield response.json());
             return new Promise((resolve, reject) => {

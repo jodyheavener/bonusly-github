@@ -42,7 +42,12 @@ export class Bonusly {
 
   async getUser(email: string): Promise<User> {
     const response = await fetch(
-      `${this.baseUrl}/users?email=${encodeURIComponent(email)}`
+      `${this.baseUrl}/users?email=${encodeURIComponent(email)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      }
     );
     const data = (await response.json()) as APIResponse;
 
@@ -66,6 +71,10 @@ export class Bonusly {
         giver_email: allocation.giver,
         reason: `+${allocation.amount} ${recipients} ${allocation.message}`,
       }),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.token}`,
+      },
     });
     const data = (await response.json()) as APIResponse;
 
