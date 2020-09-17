@@ -238,7 +238,10 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     const bonuslyClient = new bonusly_1.Bonusly(inputs.bonuslyToken, inputs.defaultHashTag);
     const commits = yield githubClient.getCommits();
     const commitAuthors = githubClient.getUniqueCommitAuthors(commits);
-    const bonuslyHandles = yield Promise.all(commitAuthors.map((author) => __awaiter(void 0, void 0, void 0, function* () { return (yield bonuslyClient.getUser(author)).username; })));
+    const bonuslyHandles = (yield Promise.all(commitAuthors.map((author) => __awaiter(void 0, void 0, void 0, function* () {
+        const user = yield bonuslyClient.getUser(author);
+        return user ? user.username : null;
+    })))).filter(user => !!user);
     const comments = yield githubClient.getComments();
     const allocations = (yield Promise.all(comments.map((comment) => __awaiter(void 0, void 0, void 0, function* () { return yield createCommentAllocation(comment, githubClient); })))).filter(allocation => !!allocation);
     const errors = [];

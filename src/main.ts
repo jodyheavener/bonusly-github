@@ -78,11 +78,14 @@ const run = async (): Promise<void> => {
 
   const commits = await githubClient.getCommits();
   const commitAuthors = githubClient.getUniqueCommitAuthors(commits);
-  const bonuslyHandles = await Promise.all(
-    commitAuthors.map(
-      async author => (await bonuslyClient.getUser(author)).username
+  const bonuslyHandles = (
+    await Promise.all(
+      commitAuthors.map(async author => {
+        const user = await bonuslyClient.getUser(author);
+        return user ? user.username : null;
+      })
     )
-  );
+  ).filter(user => !!user) as string[];
 
   const comments = await githubClient.getComments();
   const allocations = (
