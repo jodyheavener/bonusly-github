@@ -78,6 +78,7 @@ const run = async (): Promise<void> => {
 
   const commits = await githubClient.getCommits();
   const commitAuthors = githubClient.getUniqueCommitAuthors(commits);
+  info(JSON.stringify(commitAuthors));
   const bonuslyHandles = await Promise.all(
     commitAuthors.map(
       async author => (await bonuslyClient.getUser(author)).username
