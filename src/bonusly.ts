@@ -43,9 +43,6 @@ export class Bonusly {
   ) {}
 
   async getUser(email: string): Promise<User> {
-    info(`hey ${email}`);
-    info(`token ${this.token}`);
-
     const response = await fetch(
       `${this.baseUrl}/users?email=${encodeURIComponent(email)}`,
       {

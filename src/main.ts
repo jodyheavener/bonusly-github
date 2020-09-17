@@ -78,7 +78,6 @@ const run = async (): Promise<void> => {
 
   const commits = await githubClient.getCommits();
   const commitAuthors = githubClient.getUniqueCommitAuthors(commits);
-  info(JSON.stringify(commitAuthors));
   const bonuslyHandles = await Promise.all(
     commitAuthors.map(
       async author => (await bonuslyClient.getUser(author)).username
@@ -92,12 +91,47 @@ const run = async (): Promise<void> => {
         async comment => await createCommentAllocation(comment, githubClient)
       )
     )
-  ).filter(allocation => !!allocation);
+  ).filter(allocation => !!allocation) as Allocation[];
 
-  info(JSON.stringify(bonuslyHandles));
-  info(JSON.stringify(allocations));
+  const errors: string[] = [];
+  let hadSomeSuccess = false;
+  await Promise.all(
+    allocations.map(async allocation => {
+      try {
+        await bonuslyClient.createBonus(allocation, bonuslyHandles);
+        hadSomeSuccess = true;
+      } catch (error) {
+        errors.push(error);
+      }
+    })
+  );
 
-  githubClient.createComment('💚 Bonusly points awarded!');
+  let commentBody;
+  let errorBody;
+
+  if (errors.length) {
+    errorBody = `<details>
+ <summary>Click for details</summary>
+
+${errors.map(error => ` - ${error}`).join(`\r`)}
+</details>`;
+  }
+
+  if (hadSomeSuccess) {
+    commentBody = '💚 Bonusly points awarded!';
+
+    if (errorBody) {
+      commentBody += `\r\rHowever, some errors occured\r\r${errorBody}`;
+    }
+  } else {
+    commentBody = '💚 There was an issue awarding Bonusly points';
+
+    if (errorBody) {
+      commentBody += `\r\r${errorBody}`;
+    }
+  }
+
+  githubClient.createComment(commentBody);
 };
 
 try {

@@ -21,7 +21,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Bonusly = void 0;
-const core_1 = __webpack_require__(186);
 const node_fetch_1 = __importDefault(__webpack_require__(467));
 const DEFAULT_HASHTAG = '#pr';
 class Bonusly {
@@ -32,8 +31,6 @@ class Bonusly {
     }
     getUser(email) {
         return __awaiter(this, void 0, void 0, function* () {
-            core_1.info(`hey ${email}`);
-            core_1.info(`token ${this.token}`);
             const response = yield node_fetch_1.default(`${this.baseUrl}/users?email=${encodeURIComponent(email)}`, {
                 headers: {
                     Authorization: `Bearer ${this.token}`,
@@ -241,13 +238,42 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     const bonuslyClient = new bonusly_1.Bonusly(inputs.bonuslyToken, inputs.defaultHashTag);
     const commits = yield githubClient.getCommits();
     const commitAuthors = githubClient.getUniqueCommitAuthors(commits);
-    core_1.info(JSON.stringify(commitAuthors));
     const bonuslyHandles = yield Promise.all(commitAuthors.map((author) => __awaiter(void 0, void 0, void 0, function* () { return (yield bonuslyClient.getUser(author)).username; })));
     const comments = yield githubClient.getComments();
     const allocations = (yield Promise.all(comments.map((comment) => __awaiter(void 0, void 0, void 0, function* () { return yield createCommentAllocation(comment, githubClient); })))).filter(allocation => !!allocation);
-    core_1.info(JSON.stringify(bonuslyHandles));
-    core_1.info(JSON.stringify(allocations));
-    githubClient.createComment('💚 Bonusly points awarded!');
+    const errors = [];
+    let hadSomeSuccess = false;
+    yield Promise.all(allocations.map((allocation) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            yield bonuslyClient.createBonus(allocation, bonuslyHandles);
+            hadSomeSuccess = true;
+        }
+        catch (error) {
+            errors.push(error);
+        }
+    })));
+    let commentBody;
+    let errorBody;
+    if (errors.length) {
+        errorBody = `<details>
+ <summary>Click for details</summary>
+
+${errors.map(error => ` - ${error}`).join(`\r`)}
+</details>`;
+    }
+    if (hadSomeSuccess) {
+        commentBody = '💚 Bonusly points awarded!';
+        if (errorBody) {
+            commentBody += `\r\rHowever, some errors occured\r\r${errorBody}`;
+        }
+    }
+    else {
+        commentBody = '💚 There was an issue awarding Bonusly points';
+        if (errorBody) {
+            commentBody += `\r\r${errorBody}`;
+        }
+    }
+    githubClient.createComment(commentBody);
 });
 try {
     run();
