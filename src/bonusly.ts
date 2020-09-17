@@ -1,3 +1,4 @@
+import fetch from 'node-fetch';
 import { Allocation } from './types';
 
 type APIResponse = {

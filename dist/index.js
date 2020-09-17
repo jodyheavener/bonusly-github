@@ -3,7 +3,7 @@ require('./sourcemap-register.js');module.exports =
 /******/ 	var __webpack_modules__ = ({
 
 /***/ 220:
-/***/ (function(__unused_webpack_module, exports) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
@@ -16,8 +16,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Bonusly = void 0;
+const node_fetch_1 = __importDefault(__webpack_require__(467));
 const DEFAULT_HASHTAG = '#pr';
 class Bonusly {
     constructor(token, hashtag = DEFAULT_HASHTAG) {
@@ -27,7 +31,7 @@ class Bonusly {
     }
     getUser(email) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.baseUrl}/users?email=${encodeURIComponent(email)}`);
+            const response = yield node_fetch_1.default(`${this.baseUrl}/users?email=${encodeURIComponent(email)}`);
             const data = (yield response.json());
             return new Promise((resolve, reject) => {
                 if (!data.success) {
@@ -43,7 +47,7 @@ class Bonusly {
             if (!allocation.message.includes('#')) {
                 allocation.message = `${allocation.message} ${this.hashtag}`;
             }
-            const response = yield fetch(`${this.baseUrl}/bonuses`, {
+            const response = yield node_fetch_1.default(`${this.baseUrl}/bonuses`, {
                 body: JSON.stringify({
                     giver_email: allocation.giver,
                     reason: `+${allocation.amount} ${recipients} ${allocation.message}`,
